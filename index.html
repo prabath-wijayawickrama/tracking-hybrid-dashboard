@@ -1,1134 +1,536 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Hybrid Tracking → Warehouse Intelligence</title>
+<meta charset="UTF-8">
+<title>Hybrid Tracking → Warehouse Intelligence</title>
 
-  <!-- Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- TensorFlow.js -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+<!-- TensorFlow.js -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
 
-  <style>
-    :root {
-      --bg: #f4f5f7;
-      --card-bg: #ffffff;
-      --text: #1f2933;
-      --subtext: #6b7280;
-      --border: #e5e7eb;
-      --accent: #4f46e5;
-      --accent-hover: #4338ca;
-      --result-bg: #eef2ff;
-      --result-border: #6366f1;
-      --bar-bg: #e5e7eb;
-      --bar-fill: #4f46e5;
-      --conf-green: #16a34a;
-      --conf-blue: #2563eb;
-      --conf-yellow: #eab308;
-      --conf-red: #dc2626;
-    }
+<style>
+/* ---------- THEME VARIABLES ---------- */
+:root {
+  --bg: #f4f5f7;
+  --card-bg: #ffffff;
+  --text: #1f1f1f;
+  --subtext: #4b5563;
+  --border: #e5e7eb;
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --result-bg: #eef2ff;
+  --result-border: #6366f1;
 
-    body.dark {
-      --bg: #0f1115;
-      --card-bg: #1a1c22;
-      --text: #f9fafb;
-      --subtext: #9ca3af;
-      --border: #2d2f36;
-      --accent: #818cf8;
-      --accent-hover: #6366f1;
-      --result-bg: #1f2230;
-      --result-border: #818cf8;
-      --bar-bg: #2d2f36;
-      --bar-fill: #818cf8;
-    }
+  --ber-bg: #e6f9ef;
+  --ber-border: #10b981;
 
-    body {
-      margin: 0;
-      padding: 2rem;
-      background: var(--bg);
-      font-family: 'JetBrains Mono', monospace;
-      color: var(--text);
-    }
+  --poz-bg: #fde2e4;
+  --poz-border: #e11d48;
 
-    .card {
-      background: var(--card-bg);
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      max-width: 960px;
-      margin: 0 auto;
-      padding: 2rem;
-      box-sizing: border-box;
-    }
+  --unknown-bg: #fff7d6;
+  --unknown-border: #f59e0b;
 
-    h1 {
-      font-family: 'Syne', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      font-size: 28px;
-      font-weight: 700;
-      margin: 0 0 0.5rem 0;
-    }
+  --bar-bg: #e5e7eb;
+  --bar-fill: #4f46e5;
 
-    p {
-      font-size: 13px;
-      color: var(--subtext);
-      margin-top: 0.25rem;
-      margin-bottom: 1.5rem;
-    }
+  --conf-green: #16a34a;
+  --conf-blue: #2563eb;
+  --conf-yellow: #eab308;
+  --conf-red: #dc2626;
+}
 
-    label {
-      display: block;
-      margin-top: 1.5rem;
-      font-family: 'Syne';
-      font-size: 14px;
-      font-weight: 600;
-    }
+body.dark {
+  --bg: #0f1115;
+  --card-bg: #1a1c22;
+  --text: #f3f4f6;
+  --subtext: #9ca3af;
+  --border: #2d2f36;
+  --accent: #818cf8;
+  --accent-hover: #6366f1;
+  --result-bg: #1f2230;
+  --result-border: #818cf8;
 
-    input[type="file"],
-    input[type="text"] {
-      width: 100%;
-      margin-top: 0.4rem;
-      padding: 0.75rem 1rem;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--bg);
-      color: var(--text);
-      font-size: 13px;
-      box-sizing: border-box;
-    }
+  --ber-bg: #0f2f1f;
+  --ber-border: #34d399;
 
-    button {
-      margin-top: 1.5rem;
-      padding: 0.75rem 1.5rem;
-      border-radius: 10px;
-      border: none;
-      background: var(--accent);
-      color: #fff;
-      font-family: 'Syne';
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-    }
+  --poz-bg: #3a0d12;
+  --poz-border: #f87171;
 
-    button:hover {
-      background: var(--accent-hover);
-    }
+  --unknown-bg: #3a2e0f;
+  --unknown-border: #fbbf24;
 
-    .top-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-    }
+  --bar-bg: #2d2f36;
+  --bar-fill: #818cf8;
+}
 
-    .top-actions {
-      display: flex;
-      gap: 0.5rem;
-    }
+/* ---------- GLOBAL ---------- */
+body {
+  margin: 0;
+  padding: 2rem;
+  background: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text);
+  transition: background 0.3s, color 0.3s;
+}
 
-    .scan-summary {
-      display: flex;
-      justify-content: space-between;
-      gap: 0.75rem;
-      background: var(--bg);
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      padding: 0.75rem 1rem;
-      margin-bottom: 1.5rem;
-      box-sizing: border-box;
-    }
+.card {
+  background: var(--card-bg);
+  padding: 2rem;
+  border-radius: 14px;
+  max-width: 960px;
+  margin: auto;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  border: 1px solid var(--border);
+  transition: background 0.3s, border 0.3s;
+}
 
-    .scan-box {
-      flex: 1;
-      text-align: center;
-    }
+h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.5px;
+  color: var(--text);
+}
 
-    .scan-label {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--subtext);
-      margin-bottom: 0.25rem;
-    }
+p {
+  font-size: 14px;
+  opacity: 0.8;
+  margin-bottom: 1.5rem;
+  color: var(--subtext);
+}
 
-    .scan-value {
-      font-size: 20px;
-      font-weight: 700;
-      font-family: 'Syne';
-    }
+label {
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  display: block;
+  color: var(--text);
+}
 
-    .section-title {
-      font-family: 'Syne';
-      font-size: 14px;
-      font-weight: 600;
-      margin: 1.5rem 0 0.5rem 0;
-    }
+input[type="file"],
+input[type="text"] {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  margin-top: 0.4rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  transition: 0.2s ease;
+}
 
-    .warehouse-summary {
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--bg);
-      padding: 0.75rem 1rem;
-      box-sizing: border-box;
-      font-size: 12px;
-    }
+input[type="text"]:focus {
+  border-color: var(--accent);
+  background: var(--card-bg);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+}
 
-    .warehouse-row {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin: 0.35rem 0;
-    }
+button {
+  margin-top: 1.5rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--accent);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
 
-    .warehouse-label {
-      width: 80px;
-      font-weight: 600;
-      font-size: 12px;
-    }
+button:hover {
+  background: var(--accent-hover);
+}
 
-    .warehouse-bar {
-      flex: 1;
-      height: 18px;
-      border-radius: 999px;
-      background: var(--bar-bg);
-      overflow: hidden;
-      position: relative;
-    }
+button:disabled {
+  background: #9ca3af;
+  cursor: default;
+}
 
-    .warehouse-bar-fill {
-      height: 100%;
-      background: var(--bar-fill);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      color: #fff;
-      white-space: nowrap;
-    }
+/* ---------- RESULT BOX ---------- */
+.result {
+  margin-top: 1.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
+  font-size: 15px;
+  border-left: 4px solid var(--result-border);
+  background: var(--result-bg);
+  transition: background 0.3s, border 0.3s;
+}
 
-    .warehouse-count {
-      width: 40px;
-      text-align: right;
-      font-size: 12px;
-    }
+/* ---------- SCAN SUMMARY ---------- */
+.scan-summary {
+  display: flex;
+  justify-content: space-between;
+  background: var(--bg);
+  padding: 1rem;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--border);
+}
 
-    .merchant-summary {
-      margin-top: 1.5rem;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--bg);
-      padding: 0.75rem 1rem;
-      box-sizing: border-box;
-      font-size: 12px;
-    }
+.scan-box {
+  text-align: center;
+}
 
-    .merchant-summary-header,
-    .merchant-row {
-      display: grid;
-      grid-template-columns: 1fr 60px 60px;
-      column-gap: 0.5rem;
-      align-items: center;
-      padding: 0.15rem 0;
-    }
+.scan-label {
+  font-size: 13px;
+  opacity: 0.7;
+  color: var(--subtext);
+}
 
-    .merchant-summary-header {
-      font-weight: 600;
-      font-size: 12px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 0.25rem;
-      padding-bottom: 0.35rem;
-    }
+.scan-value {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+}
 
-    .result {
-      margin-top: 1.5rem;
-      padding: 1rem;
-      border-radius: 10px;
-      border-left: 4px solid var(--result-border);
-      background: var(--result-bg);
-      font-size: 13px;
-      display: none;
-    }
+/* ---------- WAREHOUSE SUMMARY ---------- */
+.section-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  margin: 1.5rem 0 0.5rem;
+  color: var(--text);
+}
 
-    .prediction-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 0.5rem;
-    }
+.warehouse-summary {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  background: var(--bg);
+}
 
-    .prediction-title {
-      font-family: 'Syne';
-      font-size: 18px;
-      font-weight: 600;
-    }
+.warehouse-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.35rem 0;
+}
 
-    .confidence-badge {
-      padding: 0.2rem 0.6rem;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 600;
-      color: #fff;
-    }
+.warehouse-label {
+  width: 80px;
+  font-size: 13px;
+  color: var(--subtext);
+}
 
-    .conf-high { background: var(--conf-green); }
-    .conf-mid { background: var(--conf-blue); }
-    .conf-low { background: var(--conf-yellow); color: #111827; }
-    .conf-verylow { background: var(--conf-red); }
+.warehouse-bar {
+  flex: 1;
+  background: var(--bar-bg);
+  border-radius: 999px;
+  overflow: hidden;
+  height: 20px;
+  position: relative;
+}
 
-    .confidence-bar-container {
-      margin-top: 0.4rem;
-      background: var(--bar-bg);
-      border-radius: 999px;
-      overflow: hidden;
-      height: 18px;
-    }
+.warehouse-bar-fill {
+  height: 100%;
+  background: var(--bar-fill);
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: #ffffff;
+  white-space: nowrap;
+  transition: width 0.25s ease;
+}
 
-    .confidence-bar-fill {
-      height: 100%;
-      background: var(--accent);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      color: #fff;
-      white-space: nowrap;
-    }
+.warehouse-count {
+  width: 40px;
+  text-align: right;
+  font-size: 13px;
+  color: var(--text);
+}
 
-    #trainingProgressContainer {
-      margin-top: 1rem;
-      display: none;
-    }
+/* ---------- MERCHANT SUMMARY ---------- */
+.merchant-summary {
+  margin-top: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  padding: 0.75rem 1rem;
+}
 
-    #trainingProgressBar {
-      height: 100%;
-      width: 0%;
-      background: var(--accent);
-      color: #fff;
-      font-size: 11px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      white-space: nowrap;
-    }
-  </style>
+.merchant-summary-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text);
+}
+
+.merchant-summary-header,
+.merchant-row {
+  display: grid;
+  grid-template-columns: 1fr 70px 70px;
+  font-size: 13px;
+  padding: 0.15rem 0;
+}
+
+.merchant-summary-header {
+  font-weight: 600;
+  color: var(--subtext);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.25rem;
+}
+
+.merchant-summary-body {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.merchant-row:nth-child(odd) {
+  background: rgba(0,0,0,0.02);
+}
+
+body.dark .merchant-row:nth-child(odd) {
+  background: rgba(255,255,255,0.03);
+}
+
+/* ---------- PREDICTION UI ---------- */
+.prediction-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.prediction-warehouse {
+  font-family: 'Syne', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.confidence-badge {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.conf-high { background: var(--conf-green); }
+.conf-mid { background: var(--conf-blue); }
+.conf-low { background: var(--conf-yellow); color:#111; }
+.conf-verylow { background: var(--conf-red); }
+
+.confidence-bar-container {
+  margin-top: 0.4rem;
+  background: var(--bar-bg);
+  border-radius: 999px;
+  overflow: hidden;
+  height: 18px;
+}
+
+.confidence-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: #fff;
+  transition: width 0.25s ease;
+}
+
+/* ---------- TRAINING PROGRESS BAR ---------- */
+#trainingProgressContainer {
+  margin-top: 1rem;
+  display: none;
+}
+
+#trainingProgressBar {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: width 0.25s ease;
+}
+
+/* ---------- MOBILE MODE ---------- */
+body.desktop .card { max-width: 960px; }
+body.mobile .card { max-width: 420px; padding: 1.2rem; }
+body.mobile h1 { font-size: 22px; }
+body.mobile input, body.mobile button { font-size: 13px; padding: 0.55rem 0.8rem; }
+</style>
 </head>
 
 <body class="desktop">
-  <div class="card">
-    <div class="top-bar">
-      <div>
-        <h1>Hybrid Tracking → Warehouse</h1>
-        <p>Upload a CSV (TrackingID, Merchant, Warehouse). The hybrid engine learns patterns and predicts the warehouse with a confidence score.</p>
-      </div>
-      <div class="top-actions">
-        <button id="themeToggleBtn" type="button">Dark Mode</button>
-        <button id="viewToggleBtn" type="button">Mobile View</button>
-      </div>
+
+<div class="card">
+
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+    <h1>Hybrid Tracking → Warehouse</h1>
+    <div style="display:flex; gap:10px;">
+      <button id="themeToggleBtn">Dark Mode</button>
+      <button id="viewToggleBtn">Mobile View</button>
     </div>
+  </div>
 
-    <div id="trainingProgressContainer">
-      <div style="font-family:'Syne'; font-size:13px; font-weight:600; margin-bottom:4px;">Learning model…</div>
-      <div style="background:var(--bar-bg); height:18px; border-radius:999px; overflow:hidden;">
-        <div id="trainingProgressBar">0%</div>
-      </div>
+  <!-- TRAINING PROGRESS BAR -->
+  <div id="trainingProgressContainer">
+    <div style="font-family:'Syne'; font-size:14px; font-weight:600; margin-bottom:6px;">
+      Learning Model…
     </div>
-
-    <div class="scan-summary">
-      <div class="scan-box">
-        <div class="scan-label">BER3</div>
-        <div class="scan-value" id="berCount">0</div>
-      </div>
-      <div class="scan-box">
-        <div class="scan-label">POZ</div>
-        <div class="scan-value" id="pozCount">0</div>
-      </div>
-      <div class="scan-box">
-        <div class="scan-label">Total</div>
-        <div class="scan-value" id="totalCount">0</div>
-      </div>
+    <div style="background:var(--bar-bg); height:18px; border-radius:999px; overflow:hidden;">
+      <div id="trainingProgressBar">0%</div>
     </div>
+  </div>
 
-    <div class="section-title">Warehouse Summary (Session)</div>
-    <div id="warehouseSummary" class="warehouse-summary">
-      <div style="font-size:12px; color:var(--subtext);">No scans yet.</div>
+  <div class="scan-summary">
+    <div class="scan-box">
+      <div class="scan-label">BER3</div>
+      <div class="scan-value" id="berCount">0</div>
     </div>
-
-    <div class="merchant-summary">
-      <div class="merchant-summary-header">
-        <div>Merchant</div>
-        <div style="text-align:right;">Count</div>
-        <div style="text-align:right;">%</div>
-      </div>
-      <div id="merchantSummaryBody">
-        <div style="font-size:12px; color:var(--subtext);">No scans yet.</div>
-      </div>
+    <div class="scan-box">
+      <div class="scan-label">POZ</div>
+      <div class="scan-value" id="pozCount">0</div>
     </div>
+    <div class="scan-box">
+      <div class="scan-label">Total</div>
+      <div class="scan-value" id="totalCount">0</div>
+    </div>
+  </div>
 
-    <label for="csvFile">Upload CSV</label>
-    <input type="file" id="csvFile" accept=".csv" />
+  <div class="section-title">Warehouse Summary (Session)</div>
+  <div id="warehouseSummary" class="warehouse-summary">
+    <div style="font-size:13px; color:var(--subtext);">No scans yet.</div>
+  </div>
 
-    <label for="returnIdInput">Tracking ID</label>
-    <input type="text" id="returnIdInput" placeholder="Enter Tracking ID…" />
+  <div class="merchant-summary">
+    <div class="merchant-summary-title">Merchant Summary (Session)</div>
+    <div class="merchant-summary-header">
+      <div>Merchant</div>
+      <div style="text-align:right;">Count</div>
+      <div style="text-align:right;">%</div>
+    </div>
+    <div id="merchantSummaryBody" class="merchant-summary-body">
+      <div style="font-size:13px; color:var(--subtext);">No scans yet.</div>
+    </div>
+  </div>
 
-    <button id="lookupBtn" type="button" disabled>Predict Warehouse</button>
+  <p>Upload a CSV (TrackingID, Merchant, Warehouse). The hybrid engine learns patterns and predicts the warehouse with a confidence score.</p>
 
-    <div id="result" class="result"></div>
+  <label>Upload CSV</label>
+  <input type="file" id="csvFile" accept=".csv">
+
+  <label>Tracking ID</label>
+  <input type="text" id="returnIdInput" placeholder="Enter Tracking ID…">
+
+  <button id="lookupBtn" disabled>Predict Warehouse</button>
+
+  <div id="result" class="result" style="display:none;"></div>
+</div>
+
 <script>
-// -------------------------------
-// THEME TOGGLE (Light / Dark Mode)
-// -------------------------------
+/* ---------- THEME + VIEW TOGGLES ---------- */
 document.getElementById("themeToggleBtn").addEventListener("click", () => {
   document.body.classList.toggle("dark");
+  document.getElementById("themeToggleBtn").textContent =
+    document.body.classList.contains("dark") ? "Light Mode" : "Dark Mode";
 });
 
-// -------------------------------
-// VIEW TOGGLE (Desktop / Mobile)
-// -------------------------------
 document.getElementById("viewToggleBtn").addEventListener("click", () => {
-  document.body.classList.toggle("mobile");
+  if (document.body.classList.contains("desktop")) {
+    document.body.classList.remove("desktop");
+    document.body.classList.add("mobile");
+    document.getElementById("viewToggleBtn").textContent = "Desktop View";
+  } else {
+    document.body.classList.remove("mobile");
+    document.body.classList.add("desktop");
+    document.getElementById("viewToggleBtn").textContent = "Mobile View";
+  }
 });
 
-// -------------------------------
-// GLOBAL STATE OBJECTS
-// -------------------------------
-let mapping = {};              // Raw CSV data
-let learnedPatterns = {};      // Prefix → Warehouse
-let knownPrefixes = [];        // List of prefixes
+/* ---------- DATA STRUCTURES ---------- */
+let mapping = {};          
+let learnedPatterns = {};  
+let knownPrefixes = [];
 
 let berCount = 0;
 let pozCount = 0;
 let totalCount = 0;
 
-let warehouseCounts = {};      // Session warehouse stats
-let merchantCounts = {};       // Session merchant stats
+let warehouseCounts = {};  
+let merchantCounts = {};   
 
-let nGramStats = {};           // N‑gram frequency model
-let markovStats = {};          // Markov chain transitions
-let mlStats = {};              // Simple ML heuristics
+let nGramStats = {};       
+let markovStats = {};      
+let mlStats = {};          
+let charSet = new Set();   
+let warehouseIndex = {};   
+let indexWarehouse = {};   
+let lstmModel = null;
+let maxSeqLen = 20;
 
-let charSet = new Set();       // Characters for LSTM
-let warehouseIndex = {};       // Warehouse → index
-let indexWarehouse = {};       // index → Warehouse
-let lstmModel = null;          // TensorFlow.js model
-let maxSeqLen = 20;            // Max sequence length
-
-// -------------------------------
-// CSV UPLOAD HANDLER
-// -------------------------------
-document.getElementById("csvFile").addEventListener("change", function () {
+/* ---------- CSV LOADING ---------- */
+document.getElementById("csvFile").addEventListener("change", function() {
   const file = this.files[0];
   if (!file) return;
 
   const reader = new FileReader();
-
-  reader.onload = async (e) => {
+  reader.onload = async e => {
     const text = e.target.result;
-
-    // Parse CSV
     mapping = parseCsv(text);
-
-    // Learn prefix patterns
     learnedPatterns = learnPatterns(mapping);
     knownPrefixes = Object.keys(learnedPatterns);
 
-    // Build statistical models
     buildNGramStats(mapping);
     buildMarkovStats(mapping);
     buildMLStats(mapping);
     buildCharSetAndWarehouseIndex(mapping);
 
-    // Train LSTM model
     await trainLstmModel(mapping);
 
-    // Enable prediction button
     document.getElementById("lookupBtn").disabled = false;
-
-    showMessage("CSV loaded. Hybrid engine trained.");
+    showMessage("CSV loaded. Hybrid engine trained.", false);
   };
-
   reader.readAsText(file);
 });
 
-// -------------------------------
-// LOOKUP BUTTON HANDLER
-// -------------------------------
+/* ---------- LOOKUP ---------- */
 document.getElementById("lookupBtn").addEventListener("click", async () => {
   const id = document.getElementById("returnIdInput").value.trim();
   if (!id) return;
 
   const merchant = getMerchantForId(id);
-  const result = await hybridPredict(id);
+  const hybridResult = await hybridPredict(id);
 
-  updateCounters(result.warehouse, merchant);
-  showHybridResult(result.warehouse, result.confidence, result.layerDetails);
+  const finalWarehouse = hybridResult.warehouse || "Unknown";
+  const finalConfidence = hybridResult.confidence || 0;
+
+  updateCounters(finalWarehouse, merchant);
+  showHybridResult(finalWarehouse, finalConfidence, hybridResult.layerDetails);
 });
-</script>
-<script>
-// -------------------------------------------------------
-// MODULE 3 — CSV PARSER + PATTERN LEARNING + STAT MODELS
-// -------------------------------------------------------
 
-// -------------------------------
-// CSV PARSER
-// -------------------------------
-function parseCsv(text) {
-  const lines = text.split(/\r?\n/).filter(l => l.trim());
-  const map = {};
-
-  for (let i = 1; i < lines.length; i++) {
-    const parts = lines[i].split(",");
-    if (parts.length < 3) continue;
-
-    const id = parts[0].trim();
-    const merchant = parts[1].trim();
-    const warehouse = parts[2].trim();
-
-    map[id] = { merchant, warehouse };
-  }
-
-  return map;
-}
-
-// -------------------------------
-// PREFIX PATTERN LEARNING
-// -------------------------------
-function learnPatterns(map) {
-  const patterns = {};
-
-  Object.entries(map).forEach(([id, info]) => {
-    const wh = info.warehouse;
-
-    // Extract prefix (letters, #, -)
-    const prefix = id.match(/^[A-Za-z#-]+/)?.[0];
-    if (!prefix) return;
-
-    if (!patterns[prefix]) patterns[prefix] = {};
-    patterns[prefix][wh] = (patterns[prefix][wh] || 0) + 1;
-  });
-
-  // Convert counts → dominant warehouse
-  const output = {};
-  Object.entries(patterns).forEach(([prefix, whCounts]) => {
-    const best = Object.entries(whCounts).sort((a, b) => b[1] - a[1])[0][0];
-    output[prefix] = best;
-  });
-
-  return output;
-}
-
-// -------------------------------
-// N‑GRAM MODEL (3‑grams)
-// -------------------------------
-function buildNGramStats(map) {
-  nGramStats = {};
-  const n = 3;
-
-  Object.entries(map).forEach(([id, info]) => {
-    const wh = info.warehouse;
-    if (!nGramStats[wh]) nGramStats[wh] = {};
-
-    for (let i = 0; i <= id.length - n; i++) {
-      const gram = id.slice(i, i + n);
-      nGramStats[wh][gram] = (nGramStats[wh][gram] || 0) + 1;
-    }
-  });
-}
-
-// -------------------------------
-// MARKOV CHAIN MODEL
-// -------------------------------
-function buildMarkovStats(map) {
-  markovStats = {};
-
-  Object.entries(map).forEach(([id, info]) => {
-    const wh = info.warehouse;
-    if (!markovStats[wh]) markovStats[wh] = {};
-
-    for (let i = 0; i < id.length - 1; i++) {
-      const a = id[i];
-      const b = id[i + 1];
-
-      if (!markovStats[wh][a]) markovStats[wh][a] = {};
-      markovStats[wh][a][b] = (markovStats[wh][a][b] || 0) + 1;
-    }
-  });
-}
-
-// -------------------------------
-// SIMPLE ML HEURISTICS
-// -------------------------------
-function buildMLStats(map) {
-  mlStats = {};
-
-  Object.entries(map).forEach(([id, info]) => {
-    const wh = info.warehouse;
-
-    if (!mlStats[wh]) {
-      mlStats[wh] = { len: 0, digits: 0, letters: 0, count: 0 };
-    }
-
-    mlStats[wh].len += id.length;
-    mlStats[wh].digits += (id.match(/\d/g) || []).length;
-    mlStats[wh].letters += (id.match(/[A-Za-z]/g) || []).length;
-    mlStats[wh].count++;
-  });
-}
-
-// -------------------------------
-// CHARACTER SET + WAREHOUSE INDEX
-// -------------------------------
-function buildCharSetAndWarehouseIndex(map) {
-  charSet = new Set();
-  warehouseIndex = {};
-  indexWarehouse = {};
-
-  let idx = 0;
-
-  Object.entries(map).forEach(([id, info]) => {
-    for (const c of id) charSet.add(c);
-
-    const wh = info.warehouse;
-    if (!(wh in warehouseIndex)) {
-      warehouseIndex[wh] = idx;
-      indexWarehouse[idx] = wh;
-      idx++;
-    }
-  });
-
-  // Cap sequence length to 20 for LSTM
-  maxSeqLen = Math.min(
-    Math.max(...Object.keys(map).map(k => k.length)),
-    20
-  );
-}
-</script>
-<script>
-// -------------------------------------------------------
-// MODULE 4 — SIMILARITY MODELS + HYBRID SCORING ENGINE
-// -------------------------------------------------------
-
-// -------------------------------
-// PREFIX MATCH SCORE
-// -------------------------------
-function prefixScore(id) {
-  for (const prefix of knownPrefixes) {
-    if (id.startsWith(prefix)) {
-      return { warehouse: learnedPatterns[prefix], score: 1.0 };
-    }
-  }
-  return { warehouse: null, score: 0 };
-}
-
-// -------------------------------
-// N‑GRAM SIMILARITY SCORE
-// -------------------------------
-function nGramScore(id) {
-  const n = 3;
-  const scores = {};
-
-  for (const [wh, grams] of Object.entries(nGramStats)) {
-    let score = 0;
-
-    for (let i = 0; i <= id.length - n; i++) {
-      const gram = id.slice(i, i + n);
-      if (grams[gram]) score += grams[gram];
-    }
-
-    scores[wh] = score;
-  }
-
-  const bestWh = Object.entries(scores).sort((a, b) => b[1] - a[1])[0];
-  return { warehouse: bestWh[0], score: bestWh[1] };
-}
-
-// -------------------------------
-// MARKOV CHAIN SCORE
-// -------------------------------
-function markovScore(id) {
-  const scores = {};
-
-  for (const [wh, transitions] of Object.entries(markovStats)) {
-    let score = 0;
-
-    for (let i = 0; i < id.length - 1; i++) {
-      const a = id[i];
-      const b = id[i + 1];
-
-      if (transitions[a] && transitions[a][b]) {
-        score += transitions[a][b];
-      }
-    }
-
-    scores[wh] = score;
-  }
-
-  const bestWh = Object.entries(scores).sort((a, b) => b[1] - a[1])[0];
-  return { warehouse: bestWh[0], score: bestWh[1] };
-}
-
-// -------------------------------
-// SIMPLE ML HEURISTIC SCORE
-// -------------------------------
-function mlHeuristicScore(id) {
-  const scores = {};
-
-  Object.entries(mlStats).forEach(([wh, stats]) => {
-    const avgLen = stats.len / stats.count;
-    const avgDigits = stats.digits / stats.count;
-    const avgLetters = stats.letters / stats.count;
-
-    const lenDiff = Math.abs(id.length - avgLen);
-    const digitDiff = Math.abs((id.match(/\d/g) || []).length - avgDigits);
-    const letterDiff = Math.abs((id.match(/[A-Za-z]/g) || []).length - avgLetters);
-
-    const score = -(lenDiff + digitDiff + letterDiff);
-    scores[wh] = score;
-  });
-
-  const bestWh = Object.entries(scores).sort((a, b) => b[1] - a[1])[0];
-  return { warehouse: bestWh[0], score: bestWh[1] };
-}
-
-// -------------------------------
-// HYBRID SCORE COMBINER
-// -------------------------------
-function combineScores(prefix, ngram, markov, ml, lstm) {
-  const weights = {
-    prefix: 1.2,
-    ngram: 1.0,
-    markov: 1.0,
-    ml: 0.6,
-    lstm: 2.0
-  };
-
-  const scoreMap = {};
-
-  function addScore(wh, score, weight) {
-    if (!scoreMap[wh]) scoreMap[wh] = 0;
-    scoreMap[wh] += score * weight;
-  }
-
-  if (prefix.warehouse) addScore(prefix.warehouse, prefix.score, weights.prefix);
-  addScore(ngram.warehouse, ngram.score, weights.ngram);
-  addScore(markov.warehouse, markov.score, weights.markov);
-  addScore(ml.warehouse, ml.score, weights.ml);
-  addScore(lstm.warehouse, lstm.score, weights.lstm);
-
-  const best = Object.entries(scoreMap).sort((a, b) => b[1] - a[1])[0];
-  const total = Object.values(scoreMap).reduce((a, b) => a + b, 0);
-
-  const confidence = total > 0 ? (best[1] / total) : 0;
-
-  return {
-    warehouse: best[0],
-    confidence,
-    layerDetails: {
-      prefix,
-      ngram,
-      markov,
-      ml,
-      lstm
-    }
-  };
-}
-</script>
-<script>
-// -------------------------------------------------------
-// MODULE 5 — LSTM MODEL (BUILD + TRAIN + PREDICT)
-// -------------------------------------------------------
-
-// -------------------------------
-// CHARACTER → INDEX ENCODING
-// -------------------------------
-function encodeChar(c) {
-  return [...charSet].indexOf(c);
-}
-
-function encodeSequence(id) {
-  const chars = [...charSet];
-  const seq = Array(maxSeqLen).fill(0);
-
-  const trimmed = id.slice(-maxSeqLen);
-  const offset = maxSeqLen - trimmed.length;
-
-  for (let i = 0; i < trimmed.length; i++) {
-    seq[offset + i] = chars.indexOf(trimmed[i]);
-  }
-
-  return seq;
-}
-
-// -------------------------------
-// BUILD LSTM MODEL
-// -------------------------------
-function buildLstmModel() {
-  const chars = [...charSet];
-  const numChars = chars.length;
-  const numWarehouses = Object.keys(warehouseIndex).length;
-
-  const model = tf.sequential();
-
-  model.add(tf.layers.embedding({
-    inputDim: numChars,
-    outputDim: 16,
-    inputLength: maxSeqLen
-  }));
-
-  model.add(tf.layers.lstm({
-    units: 32,
-    returnSequences: false
-  }));
-
-  model.add(tf.layers.dense({
-    units: numWarehouses,
-    activation: "softmax"
-  }));
-
-  model.compile({
-    optimizer: tf.train.adam(0.005),
-    loss: "sparseCategoricalCrossentropy",
-    metrics: ["accuracy"]
-  });
-
-  return model;
-}
-
-// -------------------------------
-// TRAIN LSTM MODEL
-// -------------------------------
-async function trainLstmModel(map) {
-  const ids = Object.keys(map);
-  const chars = [...charSet];
-
-  const xs = [];
-  const ys = [];
-
-  ids.forEach(id => {
-    xs.push(encodeSequence(id));
-    ys.push(warehouseIndex[map[id].warehouse]);
-  });
-
-  const xTensor = tf.tensor2d(xs, [xs.length, maxSeqLen]);
-  const yTensor = tf.tensor1d(ys, "int32");
-
-  lstmModel = buildLstmModel();
-
-  document.getElementById("trainingProgressContainer").style.display = "block";
-
-  await lstmModel.fit(xTensor, yTensor, {
-    epochs: 8,
-    batchSize: 32,
-    shuffle: true,
-    callbacks: {
-      onEpochEnd: (epoch, logs) => {
-        const pct = Math.round(((epoch + 1) / 8) * 100);
-        const bar = document.getElementById("trainingProgressBar");
-        bar.style.width = pct + "%";
-        bar.textContent = pct + "%";
-      }
-    }
-  });
-
-  document.getElementById("trainingProgressContainer").style.display = "none";
-
-  xTensor.dispose();
-  yTensor.dispose();
-}
-
-// -------------------------------
-// LSTM PREDICT
-// -------------------------------
-async function lstmPredict(id) {
-  if (!lstmModel) {
-    return { warehouse: null, score: 0 };
-  }
-
-  const seq = encodeSequence(id);
-  const input = tf.tensor2d([seq], [1, maxSeqLen]);
-
-  const pred = lstmModel.predict(input);
-  const data = await pred.data();
-
-  input.dispose();
-  pred.dispose();
-
-  let bestIndex = 0;
-  let bestScore = 0;
-
-  for (let i = 0; i < data.length; i++) {
-    if (data[i] > bestScore) {
-      bestScore = data[i];
-      bestIndex = i;
-    }
-  }
-
-  return {
-    warehouse: indexWarehouse[bestIndex],
-    score: bestScore
-  };
-}
-</script>
-<script>
-// -------------------------------------------------------
-// MODULE 6 — HYBRID PREDICTION ENGINE
-// -------------------------------------------------------
-
-// -------------------------------
-// GET MERCHANT FOR ID
-// -------------------------------
+/* ---------- MERCHANT LOOKUP ---------- */
 function getMerchantForId(id) {
-  return mapping[id]?.merchant || "Unknown";
+  if (mapping[id] && mapping[id].merchant) return mapping[id].merchant;
+  return "Unknown";
 }
 
-// -------------------------------
-// HYBRID PREDICT
-// -------------------------------
-async function hybridPredict(id) {
-  // 1. Prefix model
-  const prefix = prefixScore(id);
-
-  // 2. N‑gram model
-  const ngram = nGramScore(id);
-
-  // 3. Markov chain model
-  const markov = markovScore(id);
-
-  // 4. ML heuristic model
-  const ml = mlHeuristicScore(id);
-
-  // 5. LSTM neural model
-  const lstm = await lstmPredict(id);
-
-  // Combine all layers
-  return combineScores(prefix, ngram, markov, ml, lstm);
-}
-</script>
-<script>
-// -------------------------------------------------------
-// MODULE 7 — SESSION COUNTERS + SUMMARY RENDERERS
-// -------------------------------------------------------
-
-// -------------------------------
-// UPDATE COUNTERS AFTER PREDICTION
-// -------------------------------
-function updateCounters(wh, merchant) {
+/* ---------- COUNTERS + SUMMARIES ---------- */
+function updateCounters(warehouse, merchant) {
   totalCount++;
 
-  if (wh.includes("BER3")) berCount++;
-  if (wh.includes("POZ")) pozCount++;
+  if (warehouse.toUpperCase().includes("BER3")) berCount++;
+  if (warehouse.toUpperCase().includes("POZ")) pozCount++;
 
-  warehouseCounts[wh] = (warehouseCounts[wh] || 0) + 1;
+  warehouseCounts[warehouse] = (warehouseCounts[warehouse] || 0) + 1;
   merchantCounts[merchant] = (merchantCounts[merchant] || 0) + 1;
 
   document.getElementById("berCount").textContent = berCount;
-  document.getElementById("pozCount").textContent = pozCount;
-  document.getElementById("totalCount").textContent = totalCount;
-
-  renderWarehouseSummary();
-  renderMerchantSummary();
-}
-
-// -------------------------------
-// RENDER WAREHOUSE SUMMARY
-// -------------------------------
-function renderWarehouseSummary() {
-  const container = document.getElementById("warehouseSummary");
-  container.innerHTML = "";
-
-  const entries = Object.entries(warehouseCounts);
-  if (entries.length === 0) {
-    container.innerHTML = `<div style="font-size:12px; color:var(--subtext);">No scans yet.</div>`;
-    return;
-  }
-
-  const total = entries.reduce((a, b) => a + b[1], 0);
-
-  entries
-    .sort((a, b) => b[1] - a[1])
-    .forEach(([wh, count]) => {
-      const pct = ((count / total) * 100).toFixed(1);
-
-      const row = document.createElement("div");
-      row.className = "warehouse-row";
-
-      row.innerHTML = `
-        <div class="warehouse-label">${wh}</div>
-        <div class="warehouse-bar">
-          <div class="warehouse-bar-fill" style="width:${pct}%">${pct}%</div>
-        </div>
-        <div class="warehouse-count">${count}</div>
-      `;
-
-      container.appendChild(row);
-    });
-}
-
-// -------------------------------
-// RENDER MERCHANT SUMMARY
-// -------------------------------
-function renderMerchantSummary() {
-  const container = document.getElementById("merchantSummaryBody");
-  container.innerHTML = "";
-
-  const entries = Object.entries(merchantCounts);
-  if (entries.length === 0) {
-    container.innerHTML = `<div style="font-size:12px; color:var(--subtext);">No scans yet.</div>`;
-    return;
-  }
-
-  const total = entries.reduce((a, b) => a + b[1], 0);
-
-  entries
-    .sort((a, b) => b[1] - a[1])
-    .forEach(([merchant, count]) => {
-      const pct = ((count / total) * 100).toFixed(1);
-
-      const row = document.createElement("div");
-      row.className = "merchant-row";
-
-      row.innerHTML = `
-        <div>${merchant}</div>
-        <div style="text-align:right;">${count}</div>
-        <div style="text-align:right;">${pct}%</div>
-      `;
-
-      container.appendChild(row);
-    });
-}
-</script>
-<script>
-// -------------------------------------------------------
-// MODULE 8 — RESULT PANEL + CONFIDENCE BAR + LAYER DETAILS
-// -------------------------------------------------------
-
-// -------------------------------
-// SHOW RESULT PANEL
-// -------------------------------
-function showHybridResult(warehouse, confidence, layers) {
-  const resultBox = document.getElementById("result");
-  resultBox.style.display = "block";
-
-  const confPct = Math.round(confidence * 100);
-
-  const badgeClass =
-    confPct >= 85 ? "conf-high" :
-    confPct >= 60 ? "conf-mid" :
-    confPct >= 35 ? "conf-low" :
-    "conf-verylow";
-
-  resultBox.innerHTML = `
-    <div class="prediction-header">
-      <div class="prediction-title">Predicted Warehouse: ${warehouse}</div>
-      <div class="confidence-badge ${badgeClass}">${confPct}%</div>
-    </div>
-
-    <div class="confidence-bar-container">
-      <div class="confidence-bar-fill" style="width:${confPct}%;">
-        ${confPct}%
-      </div>
-    </div>
-
-    <div style="margin-top:1rem; font-family:'Syne'; font-size:14px; font-weight:600;">
-      Layer Breakdown
-    </div>
-
-    <div style="font-size:12px; margin-top:0.5rem;">
-      <strong>Prefix Model:</strong> ${layers.prefix.warehouse || "None"}  
-      <br>
-      <strong>N‑gram Model:</strong> ${layers.ngram.warehouse} (score: ${layers.ngram.score})
-      <br>
-      <strong>Markov Model:</strong> ${layers.markov.warehouse} (score: ${layers.markov.score})
-      <br>
-      <strong>ML Heuristic:</strong> ${layers.ml.warehouse} (score: ${layers.ml.score.toFixed(2)})
-      <br>
-      <strong>LSTM Neural:</strong> ${layers.lstm.warehouse} (score: ${layers.lstm.score.toFixed(3)})
-    </div>
-  `;
-}
-
-// -------------------------------
-// SIMPLE MESSAGE DISPLAY
-// -------------------------------
-function showMessage(msg) {
-  const box = document.getElementById("result");
-  box.style.display = "block";
-  box.innerHTML = msg;
-}
-</script>
-<script>
-// -------------------------------------------------------
-// MODULE 9 — UTILITY HELPERS + SAFE FALLBACKS
-// -------------------------------------------------------
-
-// -------------------------------
-// SANITIZE TRACKING ID INPUT
-// -------------------------------
-function sanitizeId(id) {
-  return id.replace(/[^A-Za-z0-9#-]/g, "").trim();
-}
-
-// -------------------------------
-// SAFE GET: RETURN 0 IF NaN
-// -------------------------------
-function safeNum(n) {
-  return isNaN(n) ? 0 : n;
-}
-
-// -------------------------------
-// NORMALIZE SCORE MAP
-// -------------------------------
-function normalizeScores(scoreMap) {
-  const total = Object.values(scoreMap).reduce((a, b) => a + b, 0);
-  if (total === 0) return scoreMap;
-
-  const normalized = {};
-  for (const [k, v] of Object.entries(scoreMap)) {
-    normalized[k] = v / total;
-  }
-  return normalized;
-}
-
-// -------------------------------
-// RESET RESULT PANEL
-// -------------------------------
-function clearResult() {
-  const box = document.getElementById("result");
-  box.style.display = "none";
-  box.innerHTML = "";
-}
-
-// -------------------------------
-// CLEAR INPUT FIELD ON FOCUS
-// -------------------------------
-document.getElementById("returnIdInput").addEventListener("focus", () => {
-  clearResult();
-});
-
-// -------------------------------
-// SIMPLE DELAY (for async flow)
-// -------------------------------
-function wait(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-</script>
-<script>
-// -------------------------------------------------------
-// MODULE 10 — FINAL GLUE + END OF FILE
-// -------------------------------------------------------
-
-// OPTIONAL: Auto‑clear result when typing
-document.getElementById("returnIdInput").addEventListener("input", () => {
-  clearResult();
-});
-
-// OPTIONAL: Press Enter to trigger prediction
-document.getElementById("returnIdInput").addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !document.getElementById("lookupBtn").disabled) {
-    document.getElementById("lookupBtn").click();
-  }
-});
-</script>
-
-</div> <!-- end .card -->
-</body>
-</html>
+  document.getElementById("pozCount
