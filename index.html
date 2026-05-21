@@ -1,536 +1,93 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Hybrid Tracking → Warehouse Intelligence</title>
+  <meta charset="UTF-8" />
+  <title>Hybrid Tracking → Warehouse Intelligence</title>
 
-<!-- Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css" />
 
-<!-- TensorFlow.js -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
-
-<style>
-/* ---------- THEME VARIABLES ---------- */
-:root {
-  --bg: #f4f5f7;
-  --card-bg: #ffffff;
-  --text: #1f1f1f;
-  --subtext: #4b5563;
-  --border: #e5e7eb;
-  --accent: #4f46e5;
-  --accent-hover: #4338ca;
-  --result-bg: #eef2ff;
-  --result-border: #6366f1;
-
-  --ber-bg: #e6f9ef;
-  --ber-border: #10b981;
-
-  --poz-bg: #fde2e4;
-  --poz-border: #e11d48;
-
-  --unknown-bg: #fff7d6;
-  --unknown-border: #f59e0b;
-
-  --bar-bg: #e5e7eb;
-  --bar-fill: #4f46e5;
-
-  --conf-green: #16a34a;
-  --conf-blue: #2563eb;
-  --conf-yellow: #eab308;
-  --conf-red: #dc2626;
-}
-
-body.dark {
-  --bg: #0f1115;
-  --card-bg: #1a1c22;
-  --text: #f3f4f6;
-  --subtext: #9ca3af;
-  --border: #2d2f36;
-  --accent: #818cf8;
-  --accent-hover: #6366f1;
-  --result-bg: #1f2230;
-  --result-border: #818cf8;
-
-  --ber-bg: #0f2f1f;
-  --ber-border: #34d399;
-
-  --poz-bg: #3a0d12;
-  --poz-border: #f87171;
-
-  --unknown-bg: #3a2e0f;
-  --unknown-border: #fbbf24;
-
-  --bar-bg: #2d2f36;
-  --bar-fill: #818cf8;
-}
-
-/* ---------- GLOBAL ---------- */
-body {
-  margin: 0;
-  padding: 2rem;
-  background: var(--bg);
-  font-family: 'JetBrains Mono', monospace;
-  color: var(--text);
-  transition: background 0.3s, color 0.3s;
-}
-
-.card {
-  background: var(--card-bg);
-  padding: 2rem;
-  border-radius: 14px;
-  max-width: 960px;
-  margin: auto;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
-  border: 1px solid var(--border);
-  transition: background 0.3s, border 0.3s;
-}
-
-h1 {
-  font-family: 'Syne', sans-serif;
-  font-size: 28px;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-  letter-spacing: -0.5px;
-  color: var(--text);
-}
-
-p {
-  font-size: 14px;
-  opacity: 0.8;
-  margin-bottom: 1.5rem;
-  color: var(--subtext);
-}
-
-label {
-  font-family: 'Syne', sans-serif;
-  font-size: 15px;
-  font-weight: 600;
-  margin-top: 1.5rem;
-  display: block;
-  color: var(--text);
-}
-
-input[type="file"],
-input[type="text"] {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  margin-top: 0.4rem;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--text);
-  font-size: 14px;
-  transition: 0.2s ease;
-}
-
-input[type="text"]:focus {
-  border-color: var(--accent);
-  background: var(--card-bg);
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
-}
-
-button {
-  margin-top: 1.5rem;
-  padding: 0.75rem 1.5rem;
-  background: var(--accent);
-  color: #ffffff;
-  border: none;
-  border-radius: 10px;
-  font-family: 'Syne', sans-serif;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: 0.2s ease;
-}
-
-button:hover {
-  background: var(--accent-hover);
-}
-
-button:disabled {
-  background: #9ca3af;
-  cursor: default;
-}
-
-/* ---------- RESULT BOX ---------- */
-.result {
-  margin-top: 1.5rem;
-  padding: 1rem 1.25rem;
-  border-radius: 10px;
-  font-size: 15px;
-  border-left: 4px solid var(--result-border);
-  background: var(--result-bg);
-  transition: background 0.3s, border 0.3s;
-}
-
-/* ---------- SCAN SUMMARY ---------- */
-.scan-summary {
-  display: flex;
-  justify-content: space-between;
-  background: var(--bg);
-  padding: 1rem;
-  border-radius: 10px;
-  margin-bottom: 1.5rem;
-  border: 1px solid var(--border);
-}
-
-.scan-box {
-  text-align: center;
-}
-
-.scan-label {
-  font-size: 13px;
-  opacity: 0.7;
-  color: var(--subtext);
-}
-
-.scan-value {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--text);
-}
-
-/* ---------- WAREHOUSE SUMMARY ---------- */
-.section-title {
-  font-family: 'Syne', sans-serif;
-  font-size: 15px;
-  font-weight: 600;
-  margin: 1.5rem 0 0.5rem;
-  color: var(--text);
-}
-
-.warehouse-summary {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 0.75rem 1rem;
-  background: var(--bg);
-}
-
-.warehouse-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin: 0.35rem 0;
-}
-
-.warehouse-label {
-  width: 80px;
-  font-size: 13px;
-  color: var(--subtext);
-}
-
-.warehouse-bar {
-  flex: 1;
-  background: var(--bar-bg);
-  border-radius: 999px;
-  overflow: hidden;
-  height: 20px;
-  position: relative;
-}
-
-.warehouse-bar-fill {
-  height: 100%;
-  background: var(--bar-fill);
-  border-radius: 999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  color: #ffffff;
-  white-space: nowrap;
-  transition: width 0.25s ease;
-}
-
-.warehouse-count {
-  width: 40px;
-  text-align: right;
-  font-size: 13px;
-  color: var(--text);
-}
-
-/* ---------- MERCHANT SUMMARY ---------- */
-.merchant-summary {
-  margin-top: 1.5rem;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--bg);
-  padding: 0.75rem 1rem;
-}
-
-.merchant-summary-title {
-  font-family: 'Syne', sans-serif;
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-  color: var(--text);
-}
-
-.merchant-summary-header,
-.merchant-row {
-  display: grid;
-  grid-template-columns: 1fr 70px 70px;
-  font-size: 13px;
-  padding: 0.15rem 0;
-}
-
-.merchant-summary-header {
-  font-weight: 600;
-  color: var(--subtext);
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 0.25rem;
-}
-
-.merchant-summary-body {
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.merchant-row:nth-child(odd) {
-  background: rgba(0,0,0,0.02);
-}
-
-body.dark .merchant-row:nth-child(odd) {
-  background: rgba(255,255,255,0.03);
-}
-
-/* ---------- PREDICTION UI ---------- */
-.prediction-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
-}
-
-.prediction-warehouse {
-  font-family: 'Syne', sans-serif;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.confidence-badge {
-  padding: 0.2rem 0.6rem;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  color: #fff;
-}
-
-.conf-high { background: var(--conf-green); }
-.conf-mid { background: var(--conf-blue); }
-.conf-low { background: var(--conf-yellow); color:#111; }
-.conf-verylow { background: var(--conf-red); }
-
-.confidence-bar-container {
-  margin-top: 0.4rem;
-  background: var(--bar-bg);
-  border-radius: 999px;
-  overflow: hidden;
-  height: 18px;
-}
-
-.confidence-bar-fill {
-  height: 100%;
-  border-radius: 999px;
-  background: var(--accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  color: #fff;
-  transition: width 0.25s ease;
-}
-
-/* ---------- TRAINING PROGRESS BAR ---------- */
-#trainingProgressContainer {
-  margin-top: 1rem;
-  display: none;
-}
-
-#trainingProgressBar {
-  height: 100%;
-  width: 0%;
-  background: var(--accent);
-  color: #fff;
-  font-size: 11px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: width 0.25s ease;
-}
-
-/* ---------- MOBILE MODE ---------- */
-body.desktop .card { max-width: 960px; }
-body.mobile .card { max-width: 420px; padding: 1.2rem; }
-body.mobile h1 { font-size: 22px; }
-body.mobile input, body.mobile button { font-size: 13px; padding: 0.55rem 0.8rem; }
-</style>
+  <!-- TensorFlow.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
 </head>
 
 <body class="desktop">
 
-<div class="card">
+  <div class="card">
 
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-    <h1>Hybrid Tracking → Warehouse</h1>
-    <div style="display:flex; gap:10px;">
-      <button id="themeToggleBtn">Dark Mode</button>
-      <button id="viewToggleBtn">Mobile View</button>
+    <div class="top-bar">
+      <div>
+        <h1>Hybrid Tracking → Warehouse</h1>
+        <p>Upload a CSV (TrackingID, Merchant, Warehouse). The hybrid engine learns patterns and predicts the warehouse with a confidence score.</p>
+      </div>
+
+      <div class="top-actions">
+        <button id="themeToggleBtn">Dark Mode</button>
+        <button id="viewToggleBtn">Mobile View</button>
+      </div>
     </div>
+
+    <div id="trainingProgressContainer" class="hidden">
+      <div class="progress-label">Learning model…</div>
+      <div class="progress-bar">
+        <div id="trainingProgressBar">0%</div>
+      </div>
+    </div>
+
+    <div class="scan-summary">
+      <div class="scan-box">
+        <div class="scan-label">BER3</div>
+        <div class="scan-value" id="berCount">0</div>
+      </div>
+      <div class="scan-box">
+        <div class="scan-label">POZ</div>
+        <div class="scan-value" id="pozCount">0</div>
+      </div>
+      <div class="scan-box">
+        <div class="scan-label">Total</div>
+        <div class="scan-value" id="totalCount">0</div>
+      </div>
+    </div>
+
+    <div class="section-title">Warehouse Summary (Session)</div>
+    <div id="warehouseSummary" class="warehouse-summary">
+      <div class="placeholder">No scans yet.</div>
+    </div>
+
+    <div class="merchant-summary">
+      <div class="merchant-summary-header">
+        <div>Merchant</div>
+        <div class="right">Count</div>
+        <div class="right">%</div>
+      </div>
+      <div id="merchantSummaryBody">
+        <div class="placeholder">No scans yet.</div>
+      </div>
+    </div>
+
+    <label for="csvFile">Upload CSV</label>
+    <input type="file" id="csvFile" accept=".csv" />
+
+    <label for="returnIdInput">Tracking ID</label>
+    <input type="text" id="returnIdInput" placeholder="Enter Tracking ID…" />
+
+    <button id="lookupBtn" disabled>Predict Warehouse</button>
+
+    <div id="result" class="result hidden"></div>
+
   </div>
 
-  <!-- TRAINING PROGRESS BAR -->
-  <div id="trainingProgressContainer">
-    <div style="font-family:'Syne'; font-size:14px; font-weight:600; margin-bottom:6px;">
-      Learning Model…
-    </div>
-    <div style="background:var(--bar-bg); height:18px; border-radius:999px; overflow:hidden;">
-      <div id="trainingProgressBar">0%</div>
-    </div>
-  </div>
+  <!-- JS Modules -->
+  <script src="js/utils.js"></script>
+  <script src="js/parser.js"></script>
+  <script src="js/patterns.js"></script>
+  <script src="js/ngram.js"></script>
+  <script src="js/markov.js"></script>
+  <script src="js/ml.js"></script>
+  <script src="js/lstm.js"></script>
+  <script src="js/hybrid.js"></script>
+  <script src="js/summary.js"></script>
+  <script src="js/result.js"></script>
+  <script src="js/main.js"></script>
 
-  <div class="scan-summary">
-    <div class="scan-box">
-      <div class="scan-label">BER3</div>
-      <div class="scan-value" id="berCount">0</div>
-    </div>
-    <div class="scan-box">
-      <div class="scan-label">POZ</div>
-      <div class="scan-value" id="pozCount">0</div>
-    </div>
-    <div class="scan-box">
-      <div class="scan-label">Total</div>
-      <div class="scan-value" id="totalCount">0</div>
-    </div>
-  </div>
-
-  <div class="section-title">Warehouse Summary (Session)</div>
-  <div id="warehouseSummary" class="warehouse-summary">
-    <div style="font-size:13px; color:var(--subtext);">No scans yet.</div>
-  </div>
-
-  <div class="merchant-summary">
-    <div class="merchant-summary-title">Merchant Summary (Session)</div>
-    <div class="merchant-summary-header">
-      <div>Merchant</div>
-      <div style="text-align:right;">Count</div>
-      <div style="text-align:right;">%</div>
-    </div>
-    <div id="merchantSummaryBody" class="merchant-summary-body">
-      <div style="font-size:13px; color:var(--subtext);">No scans yet.</div>
-    </div>
-  </div>
-
-  <p>Upload a CSV (TrackingID, Merchant, Warehouse). The hybrid engine learns patterns and predicts the warehouse with a confidence score.</p>
-
-  <label>Upload CSV</label>
-  <input type="file" id="csvFile" accept=".csv">
-
-  <label>Tracking ID</label>
-  <input type="text" id="returnIdInput" placeholder="Enter Tracking ID…">
-
-  <button id="lookupBtn" disabled>Predict Warehouse</button>
-
-  <div id="result" class="result" style="display:none;"></div>
-</div>
-
-<script>
-/* ---------- THEME + VIEW TOGGLES ---------- */
-document.getElementById("themeToggleBtn").addEventListener("click", () => {
-  document.body.classList.toggle("dark");
-  document.getElementById("themeToggleBtn").textContent =
-    document.body.classList.contains("dark") ? "Light Mode" : "Dark Mode";
-});
-
-document.getElementById("viewToggleBtn").addEventListener("click", () => {
-  if (document.body.classList.contains("desktop")) {
-    document.body.classList.remove("desktop");
-    document.body.classList.add("mobile");
-    document.getElementById("viewToggleBtn").textContent = "Desktop View";
-  } else {
-    document.body.classList.remove("mobile");
-    document.body.classList.add("desktop");
-    document.getElementById("viewToggleBtn").textContent = "Mobile View";
-  }
-});
-
-/* ---------- DATA STRUCTURES ---------- */
-let mapping = {};          
-let learnedPatterns = {};  
-let knownPrefixes = [];
-
-let berCount = 0;
-let pozCount = 0;
-let totalCount = 0;
-
-let warehouseCounts = {};  
-let merchantCounts = {};   
-
-let nGramStats = {};       
-let markovStats = {};      
-let mlStats = {};          
-let charSet = new Set();   
-let warehouseIndex = {};   
-let indexWarehouse = {};   
-let lstmModel = null;
-let maxSeqLen = 20;
-
-/* ---------- CSV LOADING ---------- */
-document.getElementById("csvFile").addEventListener("change", function() {
-  const file = this.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = async e => {
-    const text = e.target.result;
-    mapping = parseCsv(text);
-    learnedPatterns = learnPatterns(mapping);
-    knownPrefixes = Object.keys(learnedPatterns);
-
-    buildNGramStats(mapping);
-    buildMarkovStats(mapping);
-    buildMLStats(mapping);
-    buildCharSetAndWarehouseIndex(mapping);
-
-    await trainLstmModel(mapping);
-
-    document.getElementById("lookupBtn").disabled = false;
-    showMessage("CSV loaded. Hybrid engine trained.", false);
-  };
-  reader.readAsText(file);
-});
-
-/* ---------- LOOKUP ---------- */
-document.getElementById("lookupBtn").addEventListener("click", async () => {
-  const id = document.getElementById("returnIdInput").value.trim();
-  if (!id) return;
-
-  const merchant = getMerchantForId(id);
-  const hybridResult = await hybridPredict(id);
-
-  const finalWarehouse = hybridResult.warehouse || "Unknown";
-  const finalConfidence = hybridResult.confidence || 0;
-
-  updateCounters(finalWarehouse, merchant);
-  showHybridResult(finalWarehouse, finalConfidence, hybridResult.layerDetails);
-});
-
-/* ---------- MERCHANT LOOKUP ---------- */
-function getMerchantForId(id) {
-  if (mapping[id] && mapping[id].merchant) return mapping[id].merchant;
-  return "Unknown";
-}
-
-/* ---------- COUNTERS + SUMMARIES ---------- */
-function updateCounters(warehouse, merchant) {
-  totalCount++;
-
-  if (warehouse.toUpperCase().includes("BER3")) berCount++;
-  if (warehouse.toUpperCase().includes("POZ")) pozCount++;
-
-  warehouseCounts[warehouse] = (warehouseCounts[warehouse] || 0) + 1;
-  merchantCounts[merchant] = (merchantCounts[merchant] || 0) + 1;
-
-  document.getElementById("berCount").textContent = berCount;
-  document.getElementById("pozCount
+</body>
+</html>
